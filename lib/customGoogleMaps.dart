@@ -92,7 +92,7 @@ class _CustomGoogleMapsState extends State<CustomGoogleMaps> {
               .showMarkerInfoWindow(MarkerId(sourcePosition!.markerId.value));
           setState(() {
             currentLocation =
-                LatLng(currentLocation.latitude, currentLocation.longitude);
+                LatLng(locationData.latitude!, locationData.longitude!);
             sourcePosition = Marker(
               markerId: MarkerId("Source"),
               position:
@@ -101,6 +101,9 @@ class _CustomGoogleMapsState extends State<CustomGoogleMaps> {
               icon: markerIcon,
             );
           });
+          print(
+              "Current location${currentLocation.latitude}----${currentLocation.longitude}");
+
           getDirection(LatLng(
               destinationLocation.latitude, destinationLocation.longitude));
         }
