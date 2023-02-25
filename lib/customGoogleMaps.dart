@@ -5,6 +5,7 @@ import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:location/location.dart' as loc;
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:url_launcher/url_launcher.dart';
 
 class CustomGoogleMaps extends StatefulWidget {
@@ -101,14 +102,39 @@ class _CustomGoogleMapsState extends State<CustomGoogleMaps> {
               icon: markerIcon,
             );
           });
-          print(
-              "Current location${currentLocation.latitude}----${currentLocation.longitude}");
+          // print(
+          //     "Current location${currentLocation.latitude}----${currentLocation.longitude}");
 
           getDirection(LatLng(
               destinationLocation.latitude, destinationLocation.longitude));
         }
       });
     }
+  }
+
+  late IO.Socket socket;
+  initSocket() {
+    socket = IO.io(
+        "https://clean-soil-rest-api-z8eug.ondigitalocean.app/",
+        <String, dynamic>{
+          'autoConnect': false,
+          'transports': ['websocket'],
+        });
+    socket.connect();
+    socket.onConnect((data) {
+      print('Connection established $data');
+      socketLogin();
+    });
+    socket.on("message", (data) => print('message print $data'));
+    socket.onDisconnect((_) => print('Connection Disconnection'));
+    socket.onConnectError((err) => print(err));
+    socket.onError((err) => print(err));
+  }
+
+  socketLogin() {
+    Map userId = {"userId": "63e7d071d21b69022bc4fa75"};
+    socket.emit("socketLogin", userId);
+    socket.on("message", (data) => print("message print$data"));
   }
 
   getDirection(LatLng destination) async {
@@ -144,6 +170,7 @@ class _CustomGoogleMapsState extends State<CustomGoogleMaps> {
 
   @override
   void initState() {
+    // initSocket();
     addCustomMarkerIcon();
     addMarker();
     getNavigation();
@@ -153,6 +180,7 @@ class _CustomGoogleMapsState extends State<CustomGoogleMaps> {
 
   @override
   void dispose() {
+    socket.dispose();
     locationSubscription?.cancel();
     // TODO: implement dispose
     super.dispose();
@@ -168,6 +196,24 @@ class _CustomGoogleMapsState extends State<CustomGoogleMaps> {
           },
           child: Icon(Icons.navigation_rounded)),
       appBar: AppBar(
+        actions: [
+          IconButton(
+              onPressed: () {
+                initSocket();
+              },
+              icon: Icon(
+                Icons.send,
+                color: Colors.lightGreen,
+              )),
+          IconButton(
+              onPressed: () {
+                socket.disconnected;
+              },
+              icon: Icon(
+                Icons.stop,
+                color: Colors.red,
+              ))
+        ],
         leading: Image.asset("images/tIcon.png"),
         backgroundColor: Colors.white,
         elevation: 0,
