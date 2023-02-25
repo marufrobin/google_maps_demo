@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_maps_demo/socketIOPage.dart';
+import 'package:google_maps_demo/customGoogleMaps.dart';
 
 void main() {
   runApp(const MyApp());
@@ -37,7 +37,7 @@ class HomePage extends StatelessWidget {
               Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => SocketIOPage(),
+                    builder: (context) => CustomGoogleMaps(),
                   ));
             },
             child: Text("Go to Map")),
