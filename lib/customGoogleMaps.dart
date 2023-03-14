@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_const_constructors
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -5,16 +6,21 @@ import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:location/location.dart' as loc;
-import 'package:socket_io_client/socket_io_client.dart' as IO;
-import 'package:socket_io_client/socket_io_client.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class CustomGoogleMaps extends StatefulWidget {
-  const CustomGoogleMaps({Key? key}) : super(key: key);
+/*import '../constans/constans.dart';
+import '../model/shared_preference.dart';*/
 
+class CustomGoogleMaps extends StatefulWidget {
+  CustomGoogleMaps({Key? key, this.destinationLat, this.destinationLng})
+      : super(key: key);
+  var destinationLat;
+  var destinationLng;
   @override
   State<CustomGoogleMaps> createState() => _CustomGoogleMapsState();
 }
+
+const googleMapsApiKey = "AIzaSyC_s2zNUWs7BXpFFf1ImzArtJpJXd-Dv9Q";
 
 class _CustomGoogleMapsState extends State<CustomGoogleMaps> {
   BitmapDescriptor markerIcon = BitmapDescriptor.defaultMarker;
@@ -28,7 +34,7 @@ class _CustomGoogleMapsState extends State<CustomGoogleMaps> {
   loc.LocationData? currentPosition;
 
   var currentLocation = const LatLng(22.3366, 91.8200);
-  var destinationLocation = const LatLng(24.8822, 91.8683);
+  var destinationLocation;
 
   StreamSubscription<loc.LocationData>? locationSubscription;
 
@@ -43,7 +49,40 @@ class _CustomGoogleMapsState extends State<CustomGoogleMaps> {
     });
   }
 
-  void connectAndListen() {
+  addMarker() {
+    setState(() {
+      sourcePosition = Marker(
+        markerId: MarkerId("Source"),
+        position: currentLocation,
+        icon: markerIcon,
+      );
+      destinationPosition = Marker(
+        markerId: MarkerId("destination"),
+        position: destinationLocation,
+      );
+    });
+  }
+
+  // IO.Socket? socket;
+  /*initSocket() {
+    socket = IO.io(APIConstants.socketServerURL, <String, dynamic>{
+      'autoConnect': false,
+      'transports': ['websocket'],
+    });
+    socket?.connect();
+    socket?.onConnect((_) {
+      print('Connection established');
+    });
+    socket?.onDisconnect((_) => print('Connection Disconnection'));
+    socket?.onConnectError((err) => print(err));
+    socket?.onError((err) => print(err));
+  }*/
+  /*var uId;
+  getUserID() async {
+    uId = await SharedPreference.getStringValueSP(userId);
+  }*/
+
+  /*void connectAndListen({var currentLat, var currentLng}) {
     IO.Socket socket = IO.io(
         'https://clean-soil-rest-api-z8eug.ondigitalocean.app/',
         OptionBuilder().setTransports(['websocket']).build());
@@ -74,38 +113,16 @@ class _CustomGoogleMapsState extends State<CustomGoogleMaps> {
       stopSendLocation = data;
       setState(() {});
     });
+    adminId != null
+        ? socket.emit("sendLocation", {
+      "adminId": "${adminId}",
+      "location": {"lat": "$currentLat", "lng": "$currentLng"},
+    })
+        : null;
+
     socket.onDisconnect((_) => print('disconnect'));
-    stopSendLocation != null
-        ? null
-        : socket.emit("sendLocation", {
-            "adminId": "${adminId}",
-            "location": {"lat": "22.3366", "lng": "91.8200"},
-          });
   }
-
-/*
-  I/flutter ( 6147): logged In connected succesfully
-  I/flutter ( 6147): start sending location In {adminId: 63e7a16d97538230a84f34be}
-  I/flutter ( 6147): stop sending location In {message: tracking is now off}
-  I/flutter ( 6147): stop sending location In {message: tracking is now off}
-  I/flutter ( 6147): disconnect
-  I/flutter ( 6147): connect
-  I/flutter ( 6147): logged In connected succesfully
-  */
-  addMarker() {
-    setState(() {
-      sourcePosition = Marker(
-        markerId: MarkerId("Source"),
-        position: currentLocation,
-        icon: markerIcon,
-      );
-      destinationPosition = Marker(
-        markerId: MarkerId("destination"),
-        position: destinationLocation,
-      );
-    });
-  }
-
+*/
   getNavigation() async {
     bool serviceEnable;
     PermissionStatus permissionStatus;
@@ -113,12 +130,12 @@ class _CustomGoogleMapsState extends State<CustomGoogleMaps> {
     location.changeSettings(accuracy: loc.LocationAccuracy.high);
     serviceEnable = await location.serviceEnabled();
 
-    if (!serviceEnable) {
+    /* if (!serviceEnable) {
       serviceEnable = await location.requestService();
       if (!serviceEnable) {
         return;
       }
-    }
+    }*/
     permissionStatus = await location.hasPermission();
     if (permissionStatus == PermissionStatus.denied) {
       permissionStatus = await location.requestPermission();
@@ -131,9 +148,10 @@ class _CustomGoogleMapsState extends State<CustomGoogleMaps> {
       currentLocation =
           LatLng(currentPosition!.latitude!, currentPosition!.longitude!);
       locationSubscription =
-          location.onLocationChanged.listen((LocationData locationData) {
+          location.onLocationChanged.listen((LocationData currentLocations) {
         controller.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(
-          target: LatLng(currentLocation.latitude, currentLocation.longitude),
+          target:
+              LatLng(currentLocations.latitude!, currentLocations.longitude!),
           zoom: 16,
         )));
         if (mounted) {
@@ -141,49 +159,27 @@ class _CustomGoogleMapsState extends State<CustomGoogleMaps> {
               .showMarkerInfoWindow(MarkerId(sourcePosition!.markerId.value));
           setState(() {
             currentLocation =
-                LatLng(locationData.latitude!, locationData.longitude!);
+                LatLng(currentLocations.latitude!, currentLocations.longitude!);
             sourcePosition = Marker(
               markerId: MarkerId("Source"),
-              position:
-                  LatLng(currentLocation.latitude, currentLocation.longitude),
+              position: LatLng(
+                  currentLocations.latitude!, currentLocations.longitude!),
               infoWindow: InfoWindow(title: "Current Location"),
               icon: markerIcon,
             );
           });
-          // print(
-          //     "Current location${currentLocation.latitude}----${currentLocation.longitude}");
-
           getDirection(LatLng(
               destinationLocation.latitude, destinationLocation.longitude));
-          connectAndListen();
+          /*  connectAndListen(
+                  currentLat: currentLocation.latitude,
+                  currentLng: currentLocation.longitude);*/
+          print(
+              "current location:::::${LatLng(currentLocation.latitude, currentLocation.longitude)}");
+          // print(
+          //     "locationnn:::::${LatLng(destinationLocation.latitude, destinationLocation.longitude)}");
         }
       });
     }
-  }
-
-  late IO.Socket socket;
-  initSocket() {
-    socket = IO.io(
-        "https://clean-soil-rest-api-z8eug.ondigitalocean.app/",
-        <String, dynamic>{
-          'autoConnect': false,
-          'transports': ['websocket'],
-        });
-    socket.connect();
-    socket.onConnect((data) {
-      print('Connection established $data');
-      socketLogin();
-    });
-    socket.on("message", (data) => print('message print $data'));
-    socket.onDisconnect((_) => print('Connection Disconnection'));
-    socket.onConnectError((err) => print(err));
-    socket.onError((err) => print(err));
-  }
-
-  socketLogin() {
-    Map userId = {"userId": "63e7d071d21b69022bc4fa75"};
-    socket.emit("socketLogin", userId);
-    socket.on("message", (data) => print("message print$data"));
   }
 
   getDirection(LatLng destination) async {
@@ -219,9 +215,11 @@ class _CustomGoogleMapsState extends State<CustomGoogleMaps> {
 
   @override
   void initState() {
-    // initSocket();
+    destinationLocation = LatLng(widget.destinationLat, widget.destinationLng);
+    print("destination of ::::::$destinationLocation");
     addCustomMarkerIcon();
     addMarker();
+    // getUserID();
     getNavigation();
     // TODO: implement initState
     super.initState();
@@ -229,7 +227,6 @@ class _CustomGoogleMapsState extends State<CustomGoogleMaps> {
 
   @override
   void dispose() {
-    socket.dispose();
     locationSubscription?.cancel();
     // TODO: implement dispose
     super.dispose();
@@ -238,6 +235,7 @@ class _CustomGoogleMapsState extends State<CustomGoogleMaps> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: FloatingActionButton(
           onPressed: () async {
             await launchUrl(Uri.parse(
@@ -245,31 +243,17 @@ class _CustomGoogleMapsState extends State<CustomGoogleMaps> {
           },
           child: Icon(Icons.navigation_rounded)),
       appBar: AppBar(
-        actions: [
-          IconButton(
-              onPressed: () {
-                initSocket();
-              },
-              icon: Icon(
-                Icons.send,
-                color: Colors.lightGreen,
-              )),
-          IconButton(
-              onPressed: () {
-                socket.disconnected;
-              },
-              icon: Icon(
-                Icons.stop,
-                color: Colors.red,
-              ))
-        ],
-        leading: Image.asset("images/tIcon.png"),
-        backgroundColor: Colors.white,
+        leading: BackButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+        backgroundColor: Colors.blue,
         elevation: 0,
         centerTitle: true,
         title: Text(
           "Google Maps",
-          style: TextStyle(color: Colors.black),
+          style: TextStyle(color: Colors.white),
         ),
       ),
       body: sourcePosition == null
@@ -291,5 +275,3 @@ class _CustomGoogleMapsState extends State<CustomGoogleMaps> {
     );
   }
 }
-
-const googleMapsApiKey = "AIzaSyC_s2zNUWs7BXpFFf1ImzArtJpJXd-Dv9Q";

@@ -37,7 +37,8 @@ class HomePage extends StatelessWidget {
               Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => CustomGoogleMaps(),
+                    builder: (context) => CustomGoogleMaps(
+                        destinationLat: 23.8103, destinationLng: 90.4125),
                   ));
             },
             child: Text("Go to Map")),
